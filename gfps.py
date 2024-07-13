@@ -37,7 +37,7 @@ def read_msg(sr: serial.Serial):
 	msg.group = ord(sr.read(1))
 	msg.code = ord(sr.read(1))
 	msg.datalength = struct.unpack(">H",sr.read(2))[0]
-	msg.data += sr.read(length)
+	msg.data += sr.read(msg.datalength)
 	return msg
 
 def send(sr: serial.Serial, msg: Message):
