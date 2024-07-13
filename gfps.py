@@ -24,12 +24,31 @@ ring_right = 0x01
 ring_left = 0x02
 ring_both = 0x03
 
-def send(sr: serial.Serial, msg: Message):
-	sr.write(msg.toPacket())
+# Sometimes we get an message 
+def read(sr: serial.Serial):
 	resp = sr.read(4)
 	length = struct.unpack(">H",resp[-2:])[0]
 	resp += sr.read(length)
-	return resp
+	return resp, length
+
+# Same thing as read() except that it returns an Message except of bytes 
+def read_msg(sr: serial.Serial):
+	msg = Message(0,0,0,b"")
+	msg.group = ord(sr.read(1))
+	msg.code = ord(sr.read(1))
+	msg.datalength = struct.unpack(">H",sr.read(2))[0]
+	msg.data += sr.read(length)
+	return msg
+
+def send(sr: serial.Serial, msg: Message):
+	sr.write(msg.toPacket())
+	return read(sr)
+
+# Same thing as send() except that it returns an Message except of bytes 
+def send_msg(sr: serial.Serial, msg: Message):
+	sr.write(msg.toPacket())
+	return read_msg(sr)
+
 
 def ring(sr: serial.Serial, type: int):
 	msg = Message(0x04,0x01,1,str(type).encode("latin8"))
