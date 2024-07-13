@@ -18,13 +18,7 @@ except:
 # 2 = Case
 battery = [127,127,127]
 
-queue = [{
-	"type": "ring",
-	"mode": "both"
-},{
-	"type": "ring",
-	"mode": "stop"
-}]
+queue = []
 
 print("Connecting to earbuds")
 
@@ -69,7 +63,9 @@ while True:
 		battery[0] = ord(msg.data[0:1])
 		battery[1] = ord(msg.data[1:2])
 		battery[2] = ord(msg.data[2:3])
-		print(battery)
+		print(f"Left: {battery[0]}%")
+		print(f"Right: {battery[1]}%")
+		print(f"Case: {battery[2]}%")
 	elif msg.group == 512:
 		pass
 	else:
