@@ -1,8 +1,5 @@
 import gfps, serial, time, json, os
 
-# TODO: Replace this with an actively developed library
-import bluetooth
-
 print("Starting FP daemon")
 
 # Parse jason's config
@@ -21,34 +18,52 @@ except:
 # 2 = Case
 battery = [127,127,127]
 
+queue = [{
+	"type": "ring",
+	"mode": "both"
+},{
+	"type": "ring",
+	"mode": "stop"
+}]
+
 print("Connecting to earbuds")
-try:
-	gfps_serial = serial.Serial("/dev/rfcomm0",9600)
-	gfps_serial.timeout = 0.1
-except:
-	if conf.get("earbuds") == None:
-		print("No earbuds address provided")
-		exit(1)
-	matches = bluetooth.find_service(uuid=str(gfps.serviceuuid),address=conf["earbuds"])
-	if len(matches) == 0:
-		print("No fast pair service detected, exiting...")
-		exit(1)
-	fps = matches[0]
-	print("Got", fps["name"], "(",fps["host"],")", fps["port"])
-	gfps_serial = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-	gfps_serial.connect((fps["host"],fps["port"]))
-	gfps_serial.settimeout(0.1)
-	gfps_serial.setblocking(False)
+
+gfps_serial = serial.Serial("/dev/rfcomm0",9600)
+gfps_serial.timeout = 0.1
 
 print("Connected to earbuds")
+
+def handleQueue():
+	translation = {
+		"left": gfps.ring_left,
+		"right": gfps.ring_right,
+		"both": gfps.ring_both,
+		"pair": gfps.ring_mono,
+		"stop": gfps.ring_stop,
+	}
+	try:
+		msg = queue.pop()
+	except IndexError:
+		return
+	if msg["type"] == "ring":
+		mode = translation.get(msg["mode"])
+		if mode == None:
+			print(f"Got invalid ring mode: {msg['mode']}")
+			return
+		else:
+			gfps.ring(gfps_serial,mode)
+	else:
+		print(f"Got invalid type: {msg['type']}")
+
 
 while True:
 	try:
 		msg = gfps.read_msg(gfps_serial)
 		# Give chance to ^C the daemon
 		time.sleep(0.01)
-	except:
+	except TypeError:
 		msg = gfps.Message(512,0,0,b"")
+		handleQueue()
 	if msg.group == 0x03 and msg.code == 0x03:
 		print("Got battery!")
 		battery[0] = ord(msg.data[0:1])
@@ -58,7 +73,7 @@ while True:
 	elif msg.group == 512:
 		pass
 	else:
-		print(f"TODO: Packet {hex(msg.group)} {hex(msg.code)} {hex(msg.datalength)} {hex(msg.data)}")
+		print(f"TODO: Packet {hex(msg.group)} {hex(msg.code)} {hex(msg.datalength)} {msg.data}")
 
 print("Stopping daemon")
 gfps_serial.close()
