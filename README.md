@@ -4,7 +4,7 @@
 
 # Why?
 
-I just want wanna see my buds battery on PC
+I just wanna see my buds battery on PC
 
 # Usage
 `main.py` should ring each bud for 2 seconds
