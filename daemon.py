@@ -1,5 +1,8 @@
 import gfps, serial, time, json, os, socketserver, selectors, threading
 
+class EarbudsDisconnected(Exception):
+    pass
+
 print("Starting FastPain daemon")
 
 # Parse jason's config
@@ -88,6 +91,8 @@ def handleEarbuds():
 		except TypeError:
 			msg = gfps.Message(512,0,0,b"")
 			handleQueue()
+		except serial.serialutil.SerialException:
+			raise EarbudsDisconnected()
 		tcp.handle_request()
 		if msg.group == 0x03 and msg.code == 0x03:
 			print("Got battery!")
@@ -106,6 +111,8 @@ try:
 	handleEarbuds()
 except KeyboardInterrupt:
 	print("Requested to exit")
+except EarbudsDisconnected:
+	print("Earbuds disconnected")
 finally:
 	print("Stopping daemon")
 	gfps_serial.close()
