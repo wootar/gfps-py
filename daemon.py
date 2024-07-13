@@ -1,4 +1,7 @@
-import gfps, serial, time, bluetooth, json, os
+import gfps, serial, time, json, os
+
+# TODO: Replace this with an actively developed library
+import bluetooth
 
 print("Starting FP daemon")
 
@@ -34,6 +37,8 @@ except:
 	print("Got", fps["name"], "(",fps["host"],")", fps["port"])
 	gfps_serial = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
 	gfps_serial.connect((fps["host"],fps["port"]))
+	gfps_serial.settimeout(0.1)
+	gfps_serial.setblocking(False)
 
 print("Connected to earbuds")
 
@@ -51,7 +56,6 @@ while True:
 		battery[2] = ord(msg.data[2:3])
 		print(battery)
 	elif msg.group == 512:
-		# Ignore
 		pass
 	else:
 		print(f"TODO: Packet {hex(msg.group)} {hex(msg.code)} {hex(msg.datalength)} {hex(msg.data)}")
