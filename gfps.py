@@ -31,7 +31,7 @@ def read(sr: serial.Serial):
 	resp += sr.read(length)
 	return resp, length
 
-# Same thing as read() except that it returns an Message except of bytes 
+# Same thing as read() except that it returns an Message rather then an byte array
 def read_msg(sr: serial.Serial):
 	msg = Message(0,0,0,b"")
 	msg.group = ord(sr.read(1))
@@ -44,7 +44,7 @@ def send(sr: serial.Serial, msg: Message):
 	sr.write(msg.toPacket())
 	return read(sr)
 
-# Same thing as send() except that it returns an Message except of bytes 
+# Same thing as send() except that it returns an Message rather then an byte array
 def send_msg(sr: serial.Serial, msg: Message):
 	sr.write(msg.toPacket())
 	return read_msg(sr)
