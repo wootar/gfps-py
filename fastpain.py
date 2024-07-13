@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import gfps, serial, time, json, os, socketserver, selectors, threading
 
 class EarbudsDisconnected(Exception):

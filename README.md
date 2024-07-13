@@ -9,7 +9,7 @@ I just want wanna see my buds battery on PC
 # Usage
 `main.py` should ring each bud for 2 seconds
 
-`daemon.py` is a daemon that wraps gfps.py into a nice little TCP server
+`fastpain.py` is a daemon that wraps gfps.py into a nice little TCP server
 
 # FastPain protocol
 
