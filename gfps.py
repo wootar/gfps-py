@@ -16,7 +16,6 @@ class Message():
 		self.datalength = datalength
 		self.data = data
 	def toPacket(self):
-		print(msg_struct+str(self.datalength)+"s")
 		return struct.pack(msg_struct+str(self.datalength)+"s",self.group,self.code,self.datalength,self.data)
 
 ring_stop = 0x00
