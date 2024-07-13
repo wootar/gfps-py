@@ -13,7 +13,7 @@ I just want wanna see my buds battery on PC
 
 # FastPain protocol
 
-The FastPain uses TCP
+The FastPain protocol uses TCP
 
 Commands:
 * 0x00 - Ring right/pair (Returns nothing)
