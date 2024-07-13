@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import gfps, serial, time, json, os, socketserver, selectors, threading
+import gfps, serial, time, json, os, socketserver, selectors, threading, sys
 
 class EarbudsDisconnected(Exception):
     pass
@@ -23,6 +23,8 @@ except:
 battery = [127,127,127]
 
 queue = []
+
+gfps_serial = serial.Serial()
 
 # FastPain protocol:
 # 0x00 - Ring right/pair
@@ -49,13 +51,6 @@ class FastPain(socketserver.BaseRequestHandler):
 			self.request.send(f"{battery[0]}\n{battery[1]}\n{battery[2]}".encode("latin8"))
 		self.request.close()
 		self.finish()
-
-print("Connecting to earbuds")
-
-gfps_serial = serial.Serial("/dev/rfcomm0",9600)
-gfps_serial.timeout = 0.1
-
-print("Connected to earbuds")
 
 def handleQueue():
 	translation = {
@@ -107,13 +102,22 @@ def handleEarbuds():
 			pass
 		else:
 			print(f"TODO: Packet {hex(msg.group)} {hex(msg.code)} {hex(msg.datalength)} {msg.data}")
-
 try:
-	handleEarbuds()
-except KeyboardInterrupt:
-	print("Requested to exit")
-except EarbudsDisconnected:
-	print("Earbuds disconnected")
+	if __name__ == "__main__":
+		try:
+			while True:
+				try:
+					gfps_serial = serial.Serial("/dev/rfcomm0",9600)
+					gfps_serial.timeout = 0.1
+					print("Connected to earbuds")
+					try:
+						handleEarbuds()
+					except EarbudsDisconnected:
+						print("Earbuds disconnected")
+				except serial.serialutil.SerialException:
+					pass
+		except KeyboardInterrupt:
+			print("Requested to exit")
 finally:
 	print("Stopping daemon")
 	gfps_serial.close()
