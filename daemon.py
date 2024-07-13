@@ -1,6 +1,6 @@
-import gfps, serial, time, json, os
+import gfps, serial, time, json, os, socketserver, selectors, threading
 
-print("Starting FP daemon")
+print("Starting FastPain daemon")
 
 # Parse jason's config
 conf = {}
@@ -19,6 +19,32 @@ except:
 battery = [127,127,127]
 
 queue = []
+
+# FastPain protocol:
+# 0x00 - Ring right/pair
+# 0x01 - Ring left
+# 0x02 - Ring both
+# 0x03 - Ring stop
+# 0x04 - Get battery percentage
+class FastPain(socketserver.BaseRequestHandler):
+	def handle(self):
+		cmd_raw = self.request.recv(1)
+		if len(cmd_raw) == 0:
+			self.finish()
+			return
+		cmd = ord(cmd_raw)
+		if cmd == 0x00:
+			queue.append({"type": "ring", "mode": "right"})
+		elif cmd == 0x01:
+			queue.append({"type": "ring", "mode": "left"})
+		elif cmd == 0x02:
+			queue.append({"type": "ring", "mode": "both"})
+		elif cmd == 0x03:
+			queue.append({"type": "ring", "mode": "stop"})
+		elif cmd == 0x04:
+			self.request.send(f"{battery[0]}\n{battery[1]}\n{battery[2]}".encode("latin8"))
+		self.request.close()
+		self.finish()
 
 print("Connecting to earbuds")
 
@@ -50,26 +76,37 @@ def handleQueue():
 		print(f"Got invalid type: {msg['type']}")
 
 
-while True:
-	try:
-		msg = gfps.read_msg(gfps_serial)
-		# Give chance to ^C the daemon
-		time.sleep(0.01)
-	except TypeError:
-		msg = gfps.Message(512,0,0,b"")
-		handleQueue()
-	if msg.group == 0x03 and msg.code == 0x03:
-		print("Got battery!")
-		battery[0] = ord(msg.data[0:1])
-		battery[1] = ord(msg.data[1:2])
-		battery[2] = ord(msg.data[2:3])
-		print(f"Left: {battery[0]}%")
-		print(f"Right: {battery[1]}%")
-		print(f"Case: {battery[2]}%")
-	elif msg.group == 512:
-		pass
-	else:
-		print(f"TODO: Packet {hex(msg.group)} {hex(msg.code)} {hex(msg.datalength)} {msg.data}")
+tcp = socketserver.TCPServer(("127.0.0.1",8376),FastPain)
+tcp.timeout = 0.1
 
-print("Stopping daemon")
-gfps_serial.close()
+def handleEarbuds():
+	while True:
+		try:
+			msg = gfps.read_msg(gfps_serial)
+			# Give chance to ^C the daemon
+			time.sleep(0.01)
+		except TypeError:
+			msg = gfps.Message(512,0,0,b"")
+			handleQueue()
+		tcp.handle_request()
+		if msg.group == 0x03 and msg.code == 0x03:
+			print("Got battery!")
+			battery[0] = ord(msg.data[0:1])
+			battery[1] = ord(msg.data[1:2])
+			battery[2] = ord(msg.data[2:3])
+			print(f"Left: {battery[0]}%")
+			print(f"Right: {battery[1]}%")
+			print(f"Case: {battery[2]}%")
+		elif msg.group == 512:
+			pass
+		else:
+			print(f"TODO: Packet {hex(msg.group)} {hex(msg.code)} {hex(msg.datalength)} {msg.data}")
+
+try:
+	handleEarbuds()
+except KeyboardInterrupt:
+	print("Requested to exit")
+finally:
+	print("Stopping daemon")
+	gfps_serial.close()
+	tcp.server_close()
