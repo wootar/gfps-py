@@ -41,7 +41,7 @@ def read_msg(sr: serial.Serial):
 	wrap = sr.read(2)
 	if len(wrap) == 0:
 		return Message(512,0,0,b"")
-	msg.datalength = struct.unpack(">H",sr.read(2))[0]
+	msg.datalength = struct.unpack(">H",wrap)[0]
 	msg.data += sr.read(msg.datalength)
 	return msg
 
