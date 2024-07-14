@@ -76,6 +76,7 @@ def handleQueue():
 
 
 tcp = socketserver.TCPServer(("127.0.0.1",8376),FastPain)
+tcp.allow_reuse_address = True
 tcp.timeout = 0.1
 
 def handleEarbuds():
@@ -87,17 +88,23 @@ def handleEarbuds():
 		except TypeError:
 			msg = gfps.Message(512,0,0,b"")
 			handleQueue()
-		except serial.serialutil.SerialException:
+		except serial.serialutil.SerialException as e:
+			print(e)
 			raise EarbudsDisconnected()
 		tcp.handle_request()
 		if msg.group == 0x03 and msg.code == 0x03:
 			print("Got battery!")
-			battery[0] = ord(msg.data[0:1])
-			battery[1] = ord(msg.data[1:2])
-			battery[2] = ord(msg.data[2:3])
-			print(f"Left: {battery[0]}%")
-			print(f"Right: {battery[1]}%")
-			print(f"Case: {battery[2]}%")
+			if msg.datalength != 3:
+				print(msg.datalength)
+				print(msg.data)
+				print("Not 3 bytes")
+			else:
+				battery[0] = ord(msg.data[0:1])
+				battery[1] = ord(msg.data[1:2])
+				battery[2] = ord(msg.data[2:3])
+				print(f"Left: {battery[0]}%")
+				print(f"Right: {battery[1]}%")
+				print(f"Case: {battery[2]}%")
 		elif msg.group == 512:
 			pass
 		else:
