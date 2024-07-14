@@ -27,6 +27,8 @@ ring_both = 0x03
 # Sometimes we get an message 
 def read(sr: serial.Serial):
 	resp = sr.read(4)
+	if len(resp[-2:]) == 0:
+		return Message(512,0,0,b"")
 	length = struct.unpack(">H",resp[-2:])[0]
 	resp += sr.read(length)
 	return resp, length
@@ -36,6 +38,9 @@ def read_msg(sr: serial.Serial):
 	msg = Message(0,0,0,b"")
 	msg.group = ord(sr.read(1))
 	msg.code = ord(sr.read(1))
+	wrap = sr.read(2)
+	if len(wrap) == 0:
+		return Message(512,0,0,b"")
 	msg.datalength = struct.unpack(">H",sr.read(2))[0]
 	msg.data += sr.read(msg.datalength)
 	return msg
@@ -49,7 +54,7 @@ def send_msg(sr: serial.Serial, msg: Message):
 	sr.write(msg.toPacket())
 	return read_msg(sr)
 
-
+# Sends an ring
 def ring(sr: serial.Serial, type: int):
 	msg = Message(0x04,0x01,1,str(type).encode("latin8"))
 	return send(sr,msg)
